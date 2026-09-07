@@ -1,178 +1,420 @@
 <!doctype html>
-<html lang="id">
+<html lang="id" class="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>moclaw dashboard</title>
+<title>moclaw · dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: { extend: {
+    fontFamily: { sans: ['Inter','ui-sans-serif','system-ui','sans-serif'] },
+    colors: { brand: {50:'#eefdf4',100:'#d7fbe5',200:'#b0f5cf',300:'#7deab2',400:'#46d78e',500:'#22bd74',600:'#12975c',700:'#11794c',800:'#12613f',900:'#115035'} }
+  }}
+};
+if (localStorage.theme === 'light') document.documentElement.classList.remove('dark');
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0f1419;--card:#1a222c;--line:#2a3644;--txt:#dbe4ee;--dim:#8fa0b3;--acc:#4cc38a;--warn:#e5b567;--err:#ef6461}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.5 system-ui,sans-serif}
-header{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-header h1{font-size:16px;margin:0}.pill{font-size:12px;color:var(--dim);border:1px solid var(--line);border-radius:20px;padding:2px 10px}
-nav{display:flex;gap:6px;padding:10px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
-nav button{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer}
-nav button.on{border-color:var(--acc);color:var(--acc)}
-main{padding:16px 18px;max-width:1100px}
-.tab{display:none}.tab.on{display:block}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
-table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);font-size:13px}
-th{color:var(--dim);font-weight:600}input,textarea,select{background:#0d1319;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px 10px;width:100%}
-textarea{min-height:90px;font-family:monospace}label{display:block;color:var(--dim);font-size:12px;margin:8px 0 4px}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:700px){.row{grid-template-columns:1fr}}
-.btn{background:var(--acc);border:0;color:#06281c;font-weight:700;border-radius:8px;padding:9px 14px;cursor:pointer;margin-top:10px}
-.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--txt)}
-.btn.danger{background:transparent;border:1px solid var(--err);color:var(--err)}
-.btn.sm{padding:4px 10px;font-size:12px;margin:2px}
-.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#555}.dot.on{background:var(--acc);box-shadow:0 0 8px var(--acc)}
-#logs{background:#0a0f14;border:1px solid var(--line);border-radius:10px;padding:10px;height:420px;overflow:auto;font-family:monospace;font-size:12px}
-#logs div{white-space:pre-wrap;border-bottom:1px dotted #1d2835;padding:2px 0}
-pre{background:#0a0f14;border:1px solid var(--line);border-radius:10px;padding:10px;overflow:auto;max-height:420px}
-.hint{color:var(--dim);font-size:12px}.ok{color:var(--acc)}.bad{color:var(--err)}
-.urlbox{word-break:break-all;background:#0a0f14;padding:10px;border-radius:8px;border:1px solid var(--line);margin-top:8px}
+body{font-family:'Inter',system-ui,sans-serif}
+.mono{font-family:'JetBrains Mono',monospace}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
+.dark ::-webkit-scrollbar-thumb{background:#1e293b}
+.navbtn{display:flex;align-items:center;gap:.75rem;width:100%;padding:.65rem .9rem;border-radius:.75rem;font-size:.875rem;font-weight:500;color:#64748b;transition:all .15s}
+.navbtn:hover{background:#f1f5f9;color:#0f172a}
+.dark .navbtn:hover{background:#1e293b;color:#fff}
+.navbtn.on{background:#22bd74;color:#fff;box-shadow:0 4px 14px -2px rgba(34,189,116,.5)}
+.navbtn.on svg{stroke:#fff}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:1rem}
+.dark .card{background:#0f172a;border-color:#1e293b}
+.inp{width:100%;background:#f8fafc;border:1px solid #e2e8f0;border-radius:.65rem;padding:.6rem .8rem;font-size:.875rem;color:#0f172a;outline:none}
+.inp:focus{border-color:#22bd74;box-shadow:0 0 0 3px rgba(34,189,116,.15)}
+.dark .inp{background:#020617;border-color:#1e293b;color:#e2e8f0}
+textarea.inp{font-family:'JetBrains Mono',monospace;font-size:.8rem}
+.lbl{display:block;font-size:.72rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#94a3b8;margin:.9rem 0 .35rem}
+.btn{display:inline-flex;align-items:center;gap:.45rem;font-size:.83rem;font-weight:600;border-radius:.65rem;padding:.6rem 1rem;transition:all .15s;cursor:pointer}
+.btn-brand{background:#22bd74;color:#fff}.btn-brand:hover{background:#12975c}
+.btn-soft{background:#f1f5f9;color:#334155}.btn-soft:hover{background:#e2e8f0}
+.dark .btn-soft{background:#1e293b;color:#cbd5e1}.dark .btn-soft:hover{background:#334155}
+.btn-danger{background:transparent;border:1px solid #fca5a5;color:#ef4444}.btn-danger:hover{background:#fef2f2}
+.dark .btn-danger:hover{background:rgba(239,68,68,.1)}
+.btn-xs{font-size:.72rem;padding:.35rem .65rem;border-radius:.5rem}
+.badge{display:inline-flex;align-items:center;gap:.3rem;font-size:.7rem;font-weight:600;padding:.2rem .6rem;border-radius:999px}
+.switch{position:relative;width:40px;height:22px;border-radius:999px;background:#cbd5e1;transition:.2s;cursor:pointer;flex-shrink:0}
+.dark .switch{background:#334155}
+.switch.on{background:#22bd74}
+.switch::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}
+.switch.on::after{left:21px}
+#logbox{height:460px;overflow-y:auto}
+.logline{padding:.15rem 0;border-bottom:1px dotted #1e293b;word-break:break-word}
+.dot{width:8px;height:8px;border-radius:50%}
+.dot.on{background:#22bd74;box-shadow:0 0 8px #22bd74}
+.dot.off{background:#475569}
+.toast{animation:slidein .25s ease}
+@keyframes slidein{from{transform:translateX(100%);opacity:0}to{transform:none;opacity:1}}
+.stat-ic{width:44px;height:44px;border-radius:.8rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+th{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;font-weight:600;text-align:left;padding:.7rem .9rem}
+td{padding:.7rem .9rem;font-size:.85rem;border-top:1px solid #f1f5f9}
+.dark td{border-color:#1e293b}
 </style>
 </head>
-<body>
-<header>
-<h1>MOCLAW dashboard</h1>
-<span class="pill" id="ka-pill">keepalive: -</span>
-<span class="pill" id="acct-pill">accounts: -</span>
-</header>
-<nav>
-<button data-tab="accounts" class="on">Accounts</button>
-<button data-tab="add">Add</button>
-<button data-tab="keepalive">Keepalive</button>
-<button data-tab="logs">Logs</button>
-<button data-tab="connect">Connect</button>
-</nav>
-<main>
-<section id="tab-accounts" class="tab on">
-<div class="card"><button class="btn ghost" onclick="loadAccounts()">↻ Refresh</button>
-<span class="hint">Auto-refresh 10 dtk. ► = current.</span>
-<table><thead><tr><th>Akun</th><th>Expires</th><th>Refresh</th><th>Email</th><th>KA</th><th>Aksi</th></tr></thead>
-<tbody id="acct-body"><tr><td colspan="6">loading…</td></tr></tbody></table></div>
-</section>
+<body class="bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-200 min-h-screen">
 
-<section id="tab-add" class="tab">
-<div class="card"><h3>1) Auto-login OTP (buat mailbox otomatis)</h3>
-<label>Nama akun</label><input id="al-name" placeholder="acc1">
-<label>Email (kosong = auto-generate)</label><input id="al-email" placeholder="nama atau user@domain">
-<button class="btn" onclick="addAuto()">Login OTP (tunggu ~90 dtk)</button>
-<div id="al-msg" class="hint"></div></div>
+<div class="flex min-h-screen">
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="hidden md:flex flex-col w-64 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 p-4 sticky top-0 h-screen">
+    <div class="flex items-center gap-3 px-2 py-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-400 to-emerald-700 flex items-center justify-center text-white font-extrabold text-lg shadow-lg shadow-brand-500/30">M</div>
+      <div>
+        <div class="font-extrabold text-slate-900 dark:text-white leading-tight">moclaw</div>
+        <div class="text-[11px] text-slate-400">account manager</div>
+      </div>
+    </div>
+    <nav class="mt-4 space-y-1 flex-1" id="sidenav">
+      <button class="navbtn on" data-page="overview"><svg width="18" height="18" fill="none" stroke="#64748b" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>Overview</button>
+      <button class="navbtn" data-page="add"><svg width="18" height="18" fill="none" stroke="#64748b" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>Add Account</button>
+      <button class="navbtn" data-page="keepalive"><svg width="18" height="18" fill="none" stroke="#64748b" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>Keepalive</button>
+      <button class="navbtn" data-page="logs"><svg width="18" height="18" fill="none" stroke="#64748b" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"/></svg>Logs</button>
+      <button class="navbtn" data-page="connect"><svg width="18" height="18" fill="none" stroke="#64748b" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/></svg>Connect</button>
+    </nav>
+    <div class="card p-3 mt-3">
+      <div class="text-[11px] uppercase tracking-wide text-slate-400 font-semibold">Keepalive</div>
+      <div class="flex items-center gap-2 mt-1.5">
+        <span class="dot off" id="side-dot"></span>
+        <span class="text-sm font-semibold" id="side-ka">0 running</span>
+      </div>
+    </div>
+  </aside>
 
-<div class="card"><h3>2) Login browser 2-step (captcha-safe)</h3>
-<label>Nama akun</label><input id="br-name" placeholder="acc2">
-<button class="btn" onclick="browserStart()">Step 1 — buat URL</button>
-<div id="br-url" class="urlbox" style="display:none"></div>
-<label>Callback URL / code (Step 2)</label><input id="br-code" placeholder="https://moclaw.ai/auth/callback?code=...">
-<button class="btn" onclick="browserFinish()">Step 2 — selesaikan</button>
-<div id="br-msg" class="hint"></div></div>
+  <!-- ============ MAIN ============ -->
+  <div class="flex-1 flex flex-col min-w-0">
+    <!-- topbar -->
+    <header class="sticky top-0 z-20 backdrop-blur bg-white/80 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800">
+      <div class="flex items-center gap-3 px-4 md:px-8 py-3.5">
+        <div class="md:hidden w-9 h-9 rounded-xl bg-gradient-to-br from-brand-400 to-emerald-700 flex items-center justify-center text-white font-extrabold">M</div>
+        <div class="flex-1 min-w-0">
+          <h1 class="font-bold text-slate-900 dark:text-white leading-tight" id="page-title">Overview</h1>
+          <p class="text-xs text-slate-400 truncate" id="page-sub">Ringkasan semua akun & status token</p>
+        </div>
+        <span class="badge bg-brand-100 text-brand-700 dark:bg-brand-500/10 dark:text-brand-300" id="top-acct">– accounts</span>
+        <button class="btn btn-soft btn-xs" onclick="toggleTheme()" title="toggle theme">
+          <svg id="ic-sun" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/></svg>
+        </button>
+        <button class="btn btn-brand btn-xs" onclick="refreshAll()">↻ Refresh</button>
+      </div>
+      <!-- mobile nav -->
+      <div class="md:hidden flex gap-1.5 px-4 pb-3 overflow-x-auto" id="mnav">
+        <button class="btn btn-brand btn-xs" data-page="overview">Overview</button>
+        <button class="btn btn-soft btn-xs" data-page="add">Add</button>
+        <button class="btn btn-soft btn-xs" data-page="keepalive">Keepalive</button>
+        <button class="btn btn-soft btn-xs" data-page="logs">Logs</button>
+        <button class="btn btn-soft btn-xs" data-page="connect">Connect</button>
+      </div>
+    </header>
 
-<div class="card"><h3>3) Import localStorage JSON</h3>
-<label>Nama akun</label><input id="im-name">
-<label>JSON</label><textarea id="im-json" placeholder='{"access_token":"...","refresh_token":"..."}'></textarea>
-<button class="btn" onclick="addImport()">Import</button>
-<div id="im-msg" class="hint"></div></div>
+    <main class="p-4 md:p-8 max-w-6xl w-full mx-auto space-y-5">
+      <!-- ===== OVERVIEW ===== -->
+      <section id="pg-overview" class="space-y-5">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="stats"></div>
+        <div class="card overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+            <h2 class="font-bold text-slate-900 dark:text-white">Accounts</h2>
+            <button class="btn btn-soft btn-xs" onclick="goto('add')">+ Add account</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[720px]">
+              <thead><tr><th>Account</th><th>Status</th><th>Expires</th><th>Refresh</th><th>Keepalive</th><th class="text-right">Actions</th></tr></thead>
+              <tbody id="acct-body"><tr><td colspan="6" class="text-center text-slate-400 py-8">loading…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
-<div class="card"><h3>4) Token manual</h3>
-<label>Nama akun</label><input id="tk-name">
-<label>Access token</label><input id="tk-token">
-<button class="btn" onclick="addToken()">Tambah</button>
-<div id="tk-msg" class="hint"></div></div>
-</section>
+      <!-- ===== ADD ===== -->
+      <section id="pg-add" class="hidden space-y-5">
+        <div class="grid md:grid-cols-2 gap-5">
+          <div class="card p-5">
+            <div class="flex items-center gap-3">
+              <div class="stat-ic bg-violet-100 dark:bg-violet-500/10 text-violet-500 font-bold">✉</div>
+              <div><h3 class="font-bold text-slate-900 dark:text-white">Auto-login OTP</h3><p class="text-xs text-slate-400">Mailbox tmail dibuat otomatis, tunggu OTP ±90 dtk</p></div>
+            </div>
+            <label class="lbl">Nama akun</label><input id="al-name" class="inp" placeholder="acc1">
+            <label class="lbl">Email (kosong = auto-generate)</label><input id="al-email" class="inp" placeholder="nama atau user@domain">
+            <button class="btn btn-brand w-full justify-center mt-4" onclick="addAuto()">Login via OTP</button>
+          </div>
+          <div class="card p-5">
+            <div class="flex items-center gap-3">
+              <div class="stat-ic bg-sky-100 dark:bg-sky-500/10 text-sky-500 font-bold">◈</div>
+              <div><h3 class="font-bold text-slate-900 dark:text-white">Browser 2-step</h3><p class="text-xs text-slate-400">Captcha-safe: login di browser asli</p></div>
+            </div>
+            <label class="lbl">Nama akun</label><input id="br-name" class="inp" placeholder="acc2">
+            <button class="btn btn-soft w-full justify-center mt-3" onclick="browserStart()">Step 1 — buat URL login</button>
+            <div id="br-url" class="hidden mt-3 text-xs mono bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-slate-800 rounded-lg p-3 break-all"></div>
+            <label class="lbl">Callback URL / code (Step 2)</label><input id="br-code" class="inp" placeholder="https://moclaw.ai/auth/callback?code=…">
+            <button class="btn btn-brand w-full justify-center mt-3" onclick="browserFinish()">Step 2 — selesaikan login</button>
+          </div>
+          <div class="card p-5">
+            <div class="flex items-center gap-3">
+              <div class="stat-ic bg-amber-100 dark:bg-amber-500/10 text-amber-500 font-bold">{ }</div>
+              <div><h3 class="font-bold text-slate-900 dark:text-white">Import localStorage</h3><p class="text-xs text-slate-400">Paste JSON localStorage dari browser</p></div>
+            </div>
+            <label class="lbl">Nama akun</label><input id="im-name" class="inp">
+            <label class="lbl">JSON</label><textarea id="im-json" class="inp" rows="4" placeholder='{"access_token":"…"}'></textarea>
+            <button class="btn btn-soft w-full justify-center mt-3" onclick="addImport()">Import</button>
+          </div>
+          <div class="card p-5">
+            <div class="flex items-center gap-3">
+              <div class="stat-ic bg-brand-100 dark:bg-brand-500/10 text-brand-500 font-bold">🔑</div>
+              <div><h3 class="font-bold text-slate-900 dark:text-white">Token manual</h3><p class="text-xs text-slate-400">Tambah dengan access token saja</p></div>
+            </div>
+            <label class="lbl">Nama akun</label><input id="tk-name" class="inp">
+            <label class="lbl">Access token</label><input id="tk-token" class="inp mono">
+            <button class="btn btn-soft w-full justify-center mt-3" onclick="addToken()">Tambah</button>
+          </div>
+        </div>
+      </section>
 
-<section id="tab-keepalive" class="tab">
-<div class="card"><h3>Kontrol</h3>
-<div class="row"><div><label>Interval detik</label><input id="ka-interval" type="number" value="25" min="5"></div>
-<div><label>Target</label><select id="ka-target"></select></div></div>
-<button class="btn" onclick="kaStartOne()">▶ Start akun</button>
-<button class="btn ghost" onclick="kaStopOne()">■ Stop akun</button>
-<button class="btn" onclick="kaStartAll()">▶ Start SEMUA</button>
-<button class="btn danger" onclick="kaStopAll()">■ Stop SEMUA</button>
-<div id="ka-msg" class="hint"></div></div>
-<div class="card"><h3>Status</h3><pre id="ka-status">-</pre></div>
-</section>
+      <!-- ===== KEEPALIVE ===== -->
+      <section id="pg-keepalive" class="hidden space-y-5">
+        <div class="card p-5">
+          <h3 class="font-bold text-slate-900 dark:text-white">Global control</h3>
+          <div class="flex flex-wrap items-end gap-3 mt-2">
+            <div><label class="lbl !mt-0">Interval (detik)</label><input id="ka-interval" type="number" value="25" min="5" class="inp !w-32"></div>
+            <button class="btn btn-brand" onclick="kaStartAll()">▶ Start semua</button>
+            <button class="btn btn-danger" onclick="kaStopAll()">■ Stop semua</button>
+          </div>
+          <pre id="ka-status" class="mono text-xs mt-4 bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-slate-800 rounded-lg p-3 overflow-auto">-</pre>
+        </div>
+        <div class="card overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 font-bold text-slate-900 dark:text-white">Per-account</div>
+          <div id="ka-list" class="divide-y divide-slate-100 dark:divide-slate-800"></div>
+        </div>
+      </section>
 
-<section id="tab-logs" class="tab">
-<div class="card">
-<select id="log-filter" onchange="loadLogs()"><option value="all">all</option></select>
-<button class="btn ghost sm" onclick="loadLogs()">↻</button>
-<label style="display:inline;margin-left:10px"><input type="checkbox" id="log-auto" checked style="width:auto"> auto (2 dtk)</label>
-<div id="logs" style="margin-top:8px"></div></div>
-</section>
+      <!-- ===== LOGS ===== -->
+      <section id="pg-logs" class="hidden space-y-5">
+        <div class="card p-5">
+          <div class="flex flex-wrap items-center gap-3">
+            <select id="log-filter" class="inp !w-48" onchange="loadLogs()"><option value="all">all accounts</option></select>
+            <label class="text-xs text-slate-400 flex items-center gap-1.5"><input type="checkbox" id="log-auto" checked class="accent-emerald-500"> auto (2 dtk)</label>
+            <button class="btn btn-soft btn-xs" onclick="loadLogs()">↻</button>
+          </div>
+          <div id="logbox" class="mono text-xs mt-3 bg-slate-950 text-slate-300 rounded-xl p-4 border border-slate-800"></div>
+        </div>
+      </section>
 
-<section id="tab-connect" class="tab">
-<div class="card"><h3>Status / Connect</h3>
-<label>Akun</label><select id="cx-acct"></select>
-<button class="btn" onclick="cx('status')">Status</button>
-<button class="btn ghost" onclick="cx('connect')">Connect/wake</button>
-<button class="btn ghost" onclick="cx('initialize')">Initialize</button>
-<button class="btn ghost" onclick="cxAct('refresh')">Refresh token</button>
-<button class="btn ghost" onclick="cxAct('relogin')">Relogin OTP</button>
-<pre id="cx-out">-</pre></div>
-</section>
-</main>
+      <!-- ===== CONNECT ===== -->
+      <section id="pg-connect" class="hidden space-y-5">
+        <div class="card p-5">
+          <h3 class="font-bold text-slate-900 dark:text-white">Sandbox tools</h3>
+          <label class="lbl">Akun</label><select id="cx-acct" class="inp"></select>
+          <div class="flex flex-wrap gap-2 mt-4">
+            <button class="btn btn-brand btn-xs" onclick="cx('status')">Status</button>
+            <button class="btn btn-soft btn-xs" onclick="cx('connect')">Connect / wake</button>
+            <button class="btn btn-soft btn-xs" onclick="cxPost('initialize')">Initialize</button>
+            <button class="btn btn-soft btn-xs" onclick="cxPost('refresh')">Refresh token</button>
+            <button class="btn btn-soft btn-xs" onclick="cxPost('relogin')">Relogin OTP</button>
+          </div>
+          <pre id="cx-out" class="mono text-xs mt-4 bg-slate-50 dark:bg-black/40 border border-slate-200 dark:border-slate-800 rounded-lg p-3 overflow-auto max-h-[420px]">-</pre>
+        </div>
+      </section>
+    </main>
+    <footer class="text-center text-xs text-slate-400 py-6">moclaw dashboard · keepalive 24/7</footer>
+  </div>
+</div>
+
+<!-- delete modal -->
+<div id="modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+  <div class="card p-6 max-w-sm w-full">
+    <h3 class="font-bold text-slate-900 dark:text-white">Hapus akun?</h3>
+    <p class="text-sm text-slate-400 mt-1" id="modal-txt"></p>
+    <div class="flex justify-end gap-2 mt-5">
+      <button class="btn btn-soft btn-xs" onclick="closeModal()">Batal</button>
+      <button class="btn btn-danger btn-xs" id="modal-ok">Hapus</button>
+    </div>
+  </div>
+</div>
+<div id="toasts" class="fixed bottom-4 right-4 z-50 space-y-2 w-72"></div>
+
 <script>
-const $=id=>document.getElementById(id);
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
-document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));
-b.classList.add('on');
-document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
-$('tab-'+b.dataset.tab).classList.add('on');
-if(b.dataset.tab==='logs')loadLogs(); if(b.dataset.tab==='keepalive')loadKA();
-});
+const $ = id => document.getElementById(id);
+const META = {
+  overview: ['Overview','Ringkasan semua akun & status token'],
+  add: ['Add Account','4 metode: OTP, browser, import, token'],
+  keepalive: ['Keepalive','Start/stop penjaga sandbox 24/7'],
+  logs: ['Logs','Live log keepalive per akun'],
+  connect: ['Connect','Status, wake & token tools'],
+};
+let CACHE = {accounts:[]};
+
+function toast(msg, ok=true){
+  const d = document.createElement('div');
+  d.className = `toast card px-4 py-3 text-sm font-medium border-l-4 ${ok?'!border-l-brand-500':'!border-l-red-500'}`;
+  d.textContent = msg;
+  $('toasts').appendChild(d);
+  setTimeout(()=>{d.style.opacity='0';d.style.transition='.3s';setTimeout(()=>d.remove(),300)},3200);
+}
 async function api(m,u,b){
-const r=await fetch(u,{method:m,headers:{'Content-Type':'application/json'},body:b?JSON.stringify(b):undefined});
-const j=await r.json().catch(()=>({})); if(!r.ok)throw new Error(j.detail||JSON.stringify(j)); return j;
+  const r = await fetch(u,{method:m,headers:{'Content-Type':'application/json'},body:b?JSON.stringify(b):undefined});
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j.detail||JSON.stringify(j));
+  return j;
 }
+function toggleTheme(){
+  const h = document.documentElement;
+  if(h.classList.contains('dark')){h.classList.remove('dark');localStorage.theme='light';}
+  else{h.classList.add('dark');localStorage.theme='dark';}
+}
+function goto(p){document.querySelector(`#sidenav [data-page="${p}"]`)?.click()||showPage(p);}
+function showPage(p){
+  document.querySelectorAll('#sidenav .navbtn').forEach(x=>x.classList.toggle('on',x.dataset.page===p));
+  document.querySelectorAll('#mnav [data-page]').forEach(x=>{
+    const on = x.dataset.page===p;
+    x.className = 'btn btn-xs '+(on?'btn-brand':'btn-soft');
+  });
+  ['overview','add','keepalive','logs','connect'].forEach(k=>$('pg-'+k).classList.toggle('hidden',k!==p));
+  $('page-title').textContent = META[p][0]; $('page-sub').textContent = META[p][1];
+  if(p==='logs')loadLogs(); if(p==='keepalive')loadKA();
+}
+document.querySelectorAll('[data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+
+function expBadge(a){
+  if(a.expired) return '<span class="badge bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400">expired</span>';
+  return '<span class="badge bg-brand-100 text-brand-700 dark:bg-brand-500/10 dark:text-brand-300">active</span>';
+}
+function statCard(label,val,sub,color,icon){
+  return `<div class="card p-4 flex items-center gap-3">
+    <div class="stat-ic ${color}">${icon}</div>
+    <div class="min-w-0"><div class="text-2xl font-extrabold text-slate-900 dark:text-white leading-none">${val}</div>
+    <div class="text-xs text-slate-400 mt-1 truncate">${label}${sub?` · ${sub}`:''}</div></div></div>`;
+}
+
 async function loadAccounts(){
-try{
-const j=await (await fetch('/api/accounts')).json();
-const tb=$('acct-body');tb.innerHTML='';
-$('acct-pill').textContent='accounts: '+j.accounts.length;
-const ka=(await (await fetch('/api/keepalive/status')).json()).running;
-$('ka-pill').textContent='keepalive: '+Object.keys(ka).length+' running';
-for(const a of j.accounts){
-const tr=document.createElement('tr');
-tr.innerHTML=`<td>${a.current?'► ':''}${a.name}</td><td>${a.expires_str}${a.expired?' ⚠':''}</td><td>${a.has_refresh?'✓':'✗'}</td><td>${a.email||'-'}</td><td><span class="dot ${a.keepalive.alive?'on':''}"></span></td><td></td>`;
-const td=tr.lastChild;
-const mk=(t,f)=>{const s=document.createElement('button');s.className='btn ghost sm';s.textContent=t;s.onclick=f;td.appendChild(s);};
-mk('start',async()=>{await api('POST',`/api/keepalive/${a.name}/start`,{interval:25});loadAccounts();});
-mk('stop',async()=>{await api('POST',`/api/keepalive/${a.name}/stop`);loadAccounts();});
-mk('del',async()=>{if(confirm('hapus '+a.name+'?')){await fetch('/api/accounts/'+a.name,{method:'DELETE'});loadAccounts();}});
-td.querySelectorAll('button')[2].style.borderColor='var(--err)';
-tb.appendChild(tr);
+  try{
+    const j = await (await fetch('/api/accounts')).json();
+    CACHE.accounts = j.accounts;
+    $('top-acct').textContent = j.accounts.length+' accounts';
+    const ka = (await (await fetch('/api/keepalive/status')).json()).running;
+    const nRun = Object.keys(ka).length;
+    $('side-ka').textContent = nRun+' running';
+    $('side-dot').className = 'dot '+(nRun?'on':'off');
+    const nExp = j.accounts.filter(a=>a.expired).length;
+    $('stats').innerHTML =
+      statCard('Total accounts', j.accounts.length, '', 'bg-sky-100 dark:bg-sky-500/10 text-sky-500','◈') +
+      statCard('Keepalive running', nRun, '', 'bg-brand-100 dark:bg-brand-500/10 text-brand-500','⚡') +
+      statCard('Expired', nExp, '', nExp?'bg-red-100 dark:bg-red-500/10 text-red-500':'bg-slate-100 dark:bg-slate-800 text-slate-400','⚠') +
+      statCard('With refresh token', j.accounts.filter(a=>a.has_refresh).length, '', 'bg-violet-100 dark:bg-violet-500/10 text-violet-500','🔑');
+    const tb = $('acct-body'); tb.innerHTML = j.accounts.length?'':'<tr><td colspan="6" class="text-center text-slate-400 py-8">Belum ada akun — tambah via halaman Add.</td></tr>';
+    for(const a of j.accounts){
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td class="font-semibold text-slate-900 dark:text-white">${a.current?'<span class="text-brand-500">► </span>':''}${a.name}<div class="text-[11px] font-normal text-slate-400">${a.email||'no email'}</div></td>
+        <td>${expBadge(a)}</td>
+        <td class="mono text-xs">${a.expires_str}</td>
+        <td>${a.has_refresh?'<span class="text-brand-500 font-bold">✓</span>':'<span class="text-slate-300">✗</span>'}</td>
+        <td><div class="switch ${a.keepalive.alive?'on':''}" data-ka="${a.name}"></div></td>
+        <td class="text-right whitespace-nowrap">
+          <button class="btn btn-soft btn-xs" data-act="conn">connect</button>
+          <button class="btn btn-soft btn-xs" data-act="ref">refresh</button>
+          <button class="btn btn-danger btn-xs" data-act="del">hapus</button>
+        </td>`;
+      tr.querySelector('[data-ka]').onclick = async ev => {
+        const on = ev.target.classList.contains('on');
+        await api('POST',`/api/keepalive/${a.name}/${on?'stop':'start'}`,{interval:25});
+        toast(`Keepalive ${on?'stopped':'started'}: ${a.name}`); refreshAll();
+      };
+      const [bC,bR,bD] = tr.querySelectorAll('[data-act]');
+      bC.onclick = ()=>{ $('cx-acct').value=a.name; goto('connect'); cx('connect'); };
+      bR.onclick = async ()=>{ try{await api('POST',`/api/accounts/${a.name}/refresh`);toast('Token refreshed: '+a.name);refreshAll();}catch(e){toast('Refresh gagal: '+e.message,false);} };
+      bD.onclick = ()=>askDelete(a.name);
+      tb.appendChild(tr);
+    }
+    const opts = j.accounts.map(a=>`<option>${a.name}</option>`).join('');
+    $('cx-acct').innerHTML = opts;
+    const lf = $('log-filter'), cur = lf.value;
+    lf.innerHTML = '<option value="all">all accounts</option>'+opts;
+    if([...lf.options].some(o=>o.value===cur)) lf.value = cur;
+    renderKAList(j.accounts, ka);
+  }catch(e){ $('acct-body').innerHTML = `<tr><td colspan="6" class="text-center text-red-400 py-8">${e.message}</td></tr>`; }
 }
-const opts=j.accounts.map(a=>`<option>${a.name}</option>`).join('');
-$('ka-target').innerHTML=opts;$('cx-acct').innerHTML=opts;
-const lf=$('log-filter');const cur=lf.value;
-lf.innerHTML='<option value="all">all</option>'+opts;lf.value=[...lf.options].some(o=>o.value===cur)?cur:'all';
-}catch(e){$('acct-body').innerHTML='<tr><td colspan=6>'+e.message+'</td></tr>';}
+function renderKAList(accounts, running){
+  const el = $('ka-list'); el.innerHTML = accounts.length?'':'<div class="p-5 text-sm text-slate-400">Belum ada akun.</div>';
+  for(const a of accounts){
+    const r = running[a.name];
+    const row = document.createElement('div');
+    row.className = 'flex items-center gap-3 px-5 py-3.5';
+    row.innerHTML = `<span class="dot ${r?'on':'off'}"></span>
+      <div class="flex-1 min-w-0"><div class="font-semibold text-sm">${a.name}</div>
+      <div class="text-xs text-slate-400">${r?`running · tiap ${r.interval}s · sejak ${r.started}`:'stopped'}</div></div>
+      <div class="switch ${r?'on':''}"></div>`;
+    row.querySelector('.switch').onclick = async ev => {
+      const on = ev.target.classList.contains('on');
+      const iv = +$('ka-interval').value||25;
+      await api('POST',`/api/keepalive/${a.name}/${on?'stop':'start'}`,{interval:iv});
+      toast(`Keepalive ${on?'stopped':'started'}: ${a.name}`); refreshAll();
+    };
+    el.appendChild(row);
+  }
 }
-async function addAuto(){$('al-msg').textContent='⏳ menunggu OTP (bisa 90 dtk)…';
-try{await api('POST','/api/accounts/auto-login',{name:$('al-name').value,email:$('al-email').value||null});
-$('al-msg').innerHTML='<span class=ok>✓ ditambahkan</span>';loadAccounts();}catch(e){$('al-msg').textContent='Error: '+e.message;}}
-async function browserStart(){try{const j=await api('POST','/api/accounts/browser-start',{name:$('br-name').value});
-const d=$('br-url');d.style.display='block';d.innerHTML=`<a href="${j.url}" target="_blank" style="color:var(--acc)">Buka URL login</a><br>${j.url}`;
-$('br-msg').textContent='Buka URL, login, lalu paste callback ke Step 2.';}catch(e){$('br-msg').textContent='Error: '+e.message;}}
-async function browserFinish(){try{await api('POST','/api/accounts/browser-finish',{name:$('br-name').value,code:$('br-code').value});
-$('br-msg').innerHTML='<span class=ok>✓ login berhasil</span>';loadAccounts();}catch(e){$('br-msg').textContent='Error: '+e.message;}}
-async function addImport(){try{await api('POST','/api/accounts/import',{name:$('im-name').value,json_str:$('im-json').value});
-$('im-msg').innerHTML='<span class=ok>✓ imported</span>';loadAccounts();}catch(e){$('im-msg').textContent='Error: '+e.message;}}
-async function addToken(){try{await api('POST','/api/accounts/token',{name:$('tk-name').value,token:$('tk-token').value});
-$('tk-msg').innerHTML='<span class=ok>✓ ditambahkan</span>';loadAccounts();}catch(e){$('tk-msg').textContent='Error: '+e.message;}}
-async function kaStartOne(){const i=+$('ka-interval').value||25;await api('POST',`/api/keepalive/${$('ka-target').value}/start`,{interval:i});loadKA();}
-async function kaStopOne(){await api('POST',`/api/keepalive/${$('ka-target').value}/stop`);loadKA();}
-async function kaStartAll(){const i=+$('ka-interval').value||25;await api('POST','/api/keepalive/all/start',{interval:i});loadKA();}
-async function kaStopAll(){await api('POST','/api/keepalive/all/stop');loadKA();}
-async function loadKA(){const j=await (await fetch('/api/keepalive/status')).json();$('ka-status').textContent=JSON.stringify(j,null,2);}
-async function loadLogs(){const a=$('log-filter').value||'all';const j=await (await fetch(`/api/logs?account=${encodeURIComponent(a)}&limit=300`)).json();
-$('logs').innerHTML=j.logs.map(e=>`<div>[${e.ts}] [${e.account}] ${e.msg.replace(/</g,'&lt;')}</div>`).join('')||'<div class=hint>belum ada log</div>';
-$('logs').scrollTop=$('logs').scrollHeight;}
-async function cx(k){const a=$('cx-acct').value;$('cx-out').textContent='loading…';
-try{const m=k==='initialize'?'POST':'GET';const r=await fetch(`/api/accounts/${a}/${k}`,{method:m});$('cx-out').textContent=JSON.stringify(await r.json(),null,2);}catch(e){$('cx-out').textContent='Error: '+e.message;}}
-async function cxAct(k){const a=$('cx-acct').value;try{await fetch(`/api/accounts/${a}/${k}`,{method:'POST'});cx('status');}catch(e){$('cx-out').textContent='Error: '+e.message;}}
-loadAccounts();setInterval(loadAccounts,10000);
-setInterval(()=>{if($('tab-logs').classList.contains('on')&&$('log-auto').checked)loadLogs();},2000);
+let DEL = null;
+function askDelete(n){ DEL=n; $('modal-txt').textContent = `Akun '${n}' akan dihapus permanen.`; $('modal').classList.remove('hidden'); }
+function closeModal(){ $('modal').classList.add('hidden'); DEL=null; }
+$('modal-ok').onclick = async ()=>{ if(!DEL)return;
+  await fetch('/api/accounts/'+DEL,{method:'DELETE'}); toast('Dihapus: '+DEL); closeModal(); refreshAll(); };
+
+async function addAuto(){
+  toast('Menunggu OTP (±90 dtk)…');
+  try{ await api('POST','/api/accounts/auto-login',{name:$('al-name').value,email:$('al-email').value||null});
+    toast('Akun ditambahkan ✓'); refreshAll(); }catch(e){ toast('Gagal: '+e.message,false); }
+}
+async function browserStart(){
+  try{ const j = await api('POST','/api/accounts/browser-start',{name:$('br-name').value});
+    const d = $('br-url'); d.classList.remove('hidden');
+    d.innerHTML = `<a href="${j.url}" target="_blank" class="text-brand-500 underline">Buka URL login ↗</a><br><br>${j.url}`;
+    toast('URL login dibuat'); }catch(e){ toast('Gagal: '+e.message,false); }
+}
+async function browserFinish(){
+  try{ await api('POST','/api/accounts/browser-finish',{name:$('br-name').value,code:$('br-code').value});
+    toast('Login berhasil ✓'); refreshAll(); }catch(e){ toast('Gagal: '+e.message,false); }
+}
+async function addImport(){
+  try{ await api('POST','/api/accounts/import',{name:$('im-name').value,json_str:$('im-json').value});
+    toast('Imported ✓'); refreshAll(); }catch(e){ toast('Gagal: '+e.message,false); }
+}
+async function addToken(){
+  try{ await api('POST','/api/accounts/token',{name:$('tk-name').value,token:$('tk-token').value});
+    toast('Ditambahkan ✓'); refreshAll(); }catch(e){ toast('Gagal: '+e.message,false); }
+}
+async function kaStartAll(){ const i=+$('ka-interval').value||25; await api('POST','/api/keepalive/all/start',{interval:i}); toast('Semua keepalive started'); refreshAll(); }
+async function kaStopAll(){ await api('POST','/api/keepalive/all/stop'); toast('Semua keepalive stopped'); refreshAll(); }
+async function loadKA(){ const j = await (await fetch('/api/keepalive/status')).json(); $('ka-status').textContent = JSON.stringify(j,null,2); }
+async function loadLogs(){
+  const a = $('log-filter').value||'all';
+  const j = await (await fetch(`/api/logs?account=${encodeURIComponent(a)}&limit=300`)).json();
+  $('logbox').innerHTML = j.logs.map(e=>{
+    const c = /ERR|fail|expired|WARNING/i.test(e.msg)?'text-red-400':(/HTTP|WS |token|relogin|reconnect|initialize/i.test(e.msg)?'text-brand-300':'text-slate-400');
+    return `<div class="logline"><span class="text-slate-500">[${e.ts}]</span> <span class="text-sky-300">[${e.account}]</span> <span class="${c}">${e.msg.replace(/</g,'&lt;')}</span></div>`;
+  }).join('') || '<div class="text-slate-500">belum ada log</div>';
+  $('logbox').scrollTop = $('logbox').scrollHeight;
+}
+async function cx(k){
+  const a = $('cx-acct').value; if(!a) return;
+  $('cx-out').textContent = 'loading…';
+  try{ const r = await fetch(`/api/accounts/${a}/${k}`); $('cx-out').textContent = JSON.stringify(await r.json(),null,2); }
+  catch(e){ $('cx-out').textContent = 'Error: '+e.message; }
+}
+async function cxPost(k){
+  const a = $('cx-acct').value; if(!a) return;
+  try{ await api('POST',`/api/accounts/${a}/${k}`); toast(k+' OK: '+a); cx('status'); }
+  catch(e){ toast('Gagal: '+e.message,false); }
+}
+function refreshAll(){ loadAccounts(); if(!$('pg-keepalive').classList.contains('hidden'))loadKA(); }
+refreshAll();
+setInterval(refreshAll, 10000);
+setInterval(()=>{ if(!$('pg-logs').classList.contains('hidden') && $('log-auto').checked) loadLogs(); }, 2000);
 </script>
 </body>
 </html>
