@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """moclaw.ai — multi-account manager (TUI)."""
 
-import json, hashlib, base64, secrets, time, sys, re
+import json, hashlib, base64, secrets, time, sys, re, os
 import urllib.parse
 from pathlib import Path
 from urllib.request import Request, urlopen
@@ -15,7 +15,7 @@ CLIENT_ID = "R7QyN3rYIv2DSEqkgQJjfSvvb6XFxMOu"
 REDIRECT_URI = "https://moclaw.ai/auth/callback"
 TMAIL_BASE = "https://tmail.perkutut.web.id"
 
-MOCLAW_DIR = Path.home() / ".moclaw"
+MOCLAW_DIR = Path(os.environ.get("MOCLAW_DIR", str(Path.home() / ".moclaw")))
 ACCOUNTS_FILE = MOCLAW_DIR / "accounts.json"
 CURRENT_FILE = MOCLAW_DIR / "current.txt"
 

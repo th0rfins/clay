@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>moclaw dashboard</title>
+<style>
+:root{--bg:#0f1419;--card:#1a222c;--line:#2a3644;--txt:#dbe4ee;--dim:#8fa0b3;--acc:#4cc38a;--warn:#e5b567;--err:#ef6461}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.5 system-ui,sans-serif}
+header{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{font-size:16px;margin:0}.pill{font-size:12px;color:var(--dim);border:1px solid var(--line);border-radius:20px;padding:2px 10px}
+nav{display:flex;gap:6px;padding:10px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+nav button{background:var(--card);color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer}
+nav button.on{border-color:var(--acc);color:var(--acc)}
+main{padding:16px 18px;max-width:1100px}
+.tab{display:none}.tab.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px;border-bottom:1px solid var(--line);font-size:13px}
+th{color:var(--dim);font-weight:600}input,textarea,select{background:#0d1319;border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px 10px;width:100%}
+textarea{min-height:90px;font-family:monospace}label{display:block;color:var(--dim);font-size:12px;margin:8px 0 4px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:700px){.row{grid-template-columns:1fr}}
+.btn{background:var(--acc);border:0;color:#06281c;font-weight:700;border-radius:8px;padding:9px 14px;cursor:pointer;margin-top:10px}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--txt)}
+.btn.danger{background:transparent;border:1px solid var(--err);color:var(--err)}
+.btn.sm{padding:4px 10px;font-size:12px;margin:2px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#555}.dot.on{background:var(--acc);box-shadow:0 0 8px var(--acc)}
+#logs{background:#0a0f14;border:1px solid var(--line);border-radius:10px;padding:10px;height:420px;overflow:auto;font-family:monospace;font-size:12px}
+#logs div{white-space:pre-wrap;border-bottom:1px dotted #1d2835;padding:2px 0}
+pre{background:#0a0f14;border:1px solid var(--line);border-radius:10px;padding:10px;overflow:auto;max-height:420px}
+.hint{color:var(--dim);font-size:12px}.ok{color:var(--acc)}.bad{color:var(--err)}
+.urlbox{word-break:break-all;background:#0a0f14;padding:10px;border-radius:8px;border:1px solid var(--line);margin-top:8px}
+</style>
+</head>
+<body>
+<header>
+<h1>MOCLAW dashboard</h1>
+<span class="pill" id="ka-pill">keepalive: -</span>
+<span class="pill" id="acct-pill">accounts: -</span>
+</header>
+<nav>
+<button data-tab="accounts" class="on">Accounts</button>
+<button data-tab="add">Add</button>
+<button data-tab="keepalive">Keepalive</button>
+<button data-tab="logs">Logs</button>
+<button data-tab="connect">Connect</button>
+</nav>
+<main>
+<section id="tab-accounts" class="tab on">
+<div class="card"><button class="btn ghost" onclick="loadAccounts()">↻ Refresh</button>
+<span class="hint">Auto-refresh 10 dtk. ► = current.</span>
+<table><thead><tr><th>Akun</th><th>Expires</th><th>Refresh</th><th>Email</th><th>KA</th><th>Aksi</th></tr></thead>
+<tbody id="acct-body"><tr><td colspan="6">loading…</td></tr></tbody></table></div>
+</section>
+
+<section id="tab-add" class="tab">
+<div class="card"><h3>1) Auto-login OTP (buat mailbox otomatis)</h3>
+<label>Nama akun</label><input id="al-name" placeholder="acc1">
+<label>Email (kosong = auto-generate)</label><input id="al-email" placeholder="nama atau user@domain">
+<button class="btn" onclick="addAuto()">Login OTP (tunggu ~90 dtk)</button>
+<div id="al-msg" class="hint"></div></div>
+
+<div class="card"><h3>2) Login browser 2-step (captcha-safe)</h3>
+<label>Nama akun</label><input id="br-name" placeholder="acc2">
+<button class="btn" onclick="browserStart()">Step 1 — buat URL</button>
+<div id="br-url" class="urlbox" style="display:none"></div>
+<label>Callback URL / code (Step 2)</label><input id="br-code" placeholder="https://moclaw.ai/auth/callback?code=...">
+<button class="btn" onclick="browserFinish()">Step 2 — selesaikan</button>
+<div id="br-msg" class="hint"></div></div>
+
+<div class="card"><h3>3) Import localStorage JSON</h3>
+<label>Nama akun</label><input id="im-name">
+<label>JSON</label><textarea id="im-json" placeholder='{"access_token":"...","refresh_token":"..."}'></textarea>
+<button class="btn" onclick="addImport()">Import</button>
+<div id="im-msg" class="hint"></div></div>
+
+<div class="card"><h3>4) Token manual</h3>
+<label>Nama akun</label><input id="tk-name">
+<label>Access token</label><input id="tk-token">
+<button class="btn" onclick="addToken()">Tambah</button>
+<div id="tk-msg" class="hint"></div></div>
+</section>
+
+<section id="tab-keepalive" class="tab">
+<div class="card"><h3>Kontrol</h3>
+<div class="row"><div><label>Interval detik</label><input id="ka-interval" type="number" value="25" min="5"></div>
+<div><label>Target</label><select id="ka-target"></select></div></div>
+<button class="btn" onclick="kaStartOne()">▶ Start akun</button>
+<button class="btn ghost" onclick="kaStopOne()">■ Stop akun</button>
+<button class="btn" onclick="kaStartAll()">▶ Start SEMUA</button>
+<button class="btn danger" onclick="kaStopAll()">■ Stop SEMUA</button>
+<div id="ka-msg" class="hint"></div></div>
+<div class="card"><h3>Status</h3><pre id="ka-status">-</pre></div>
+</section>
+
+<section id="tab-logs" class="tab">
+<div class="card">
+<select id="log-filter" onchange="loadLogs()"><option value="all">all</option></select>
+<button class="btn ghost sm" onclick="loadLogs()">↻</button>
+<label style="display:inline;margin-left:10px"><input type="checkbox" id="log-auto" checked style="width:auto"> auto (2 dtk)</label>
+<div id="logs" style="margin-top:8px"></div></div>
+</section>
+
+<section id="tab-connect" class="tab">
+<div class="card"><h3>Status / Connect</h3>
+<label>Akun</label><select id="cx-acct"></select>
+<button class="btn" onclick="cx('status')">Status</button>
+<button class="btn ghost" onclick="cx('connect')">Connect/wake</button>
+<button class="btn ghost" onclick="cx('initialize')">Initialize</button>
+<button class="btn ghost" onclick="cxAct('refresh')">Refresh token</button>
+<button class="btn ghost" onclick="cxAct('relogin')">Relogin OTP</button>
+<pre id="cx-out">-</pre></div>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));
+b.classList.add('on');
+document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+$('tab-'+b.dataset.tab).classList.add('on');
+if(b.dataset.tab==='logs')loadLogs(); if(b.dataset.tab==='keepalive')loadKA();
+});
+async function api(m,u,b){
+const r=await fetch(u,{method:m,headers:{'Content-Type':'application/json'},body:b?JSON.stringify(b):undefined});
+const j=await r.json().catch(()=>({})); if(!r.ok)throw new Error(j.detail||JSON.stringify(j)); return j;
+}
+async function loadAccounts(){
+try{
+const j=await (await fetch('/api/accounts')).json();
+const tb=$('acct-body');tb.innerHTML='';
+$('acct-pill').textContent='accounts: '+j.accounts.length;
+const ka=(await (await fetch('/api/keepalive/status')).json()).running;
+$('ka-pill').textContent='keepalive: '+Object.keys(ka).length+' running';
+for(const a of j.accounts){
+const tr=document.createElement('tr');
+tr.innerHTML=`<td>${a.current?'► ':''}${a.name}</td><td>${a.expires_str}${a.expired?' ⚠':''}</td><td>${a.has_refresh?'✓':'✗'}</td><td>${a.email||'-'}</td><td><span class="dot ${a.keepalive.alive?'on':''}"></span></td><td></td>`;
+const td=tr.lastChild;
+const mk=(t,f)=>{const s=document.createElement('button');s.className='btn ghost sm';s.textContent=t;s.onclick=f;td.appendChild(s);};
+mk('start',async()=>{await api('POST',`/api/keepalive/${a.name}/start`,{interval:25});loadAccounts();});
+mk('stop',async()=>{await api('POST',`/api/keepalive/${a.name}/stop`);loadAccounts();});
+mk('del',async()=>{if(confirm('hapus '+a.name+'?')){await fetch('/api/accounts/'+a.name,{method:'DELETE'});loadAccounts();}});
+td.querySelectorAll('button')[2].style.borderColor='var(--err)';
+tb.appendChild(tr);
+}
+const opts=j.accounts.map(a=>`<option>${a.name}</option>`).join('');
+$('ka-target').innerHTML=opts;$('cx-acct').innerHTML=opts;
+const lf=$('log-filter');const cur=lf.value;
+lf.innerHTML='<option value="all">all</option>'+opts;lf.value=[...lf.options].some(o=>o.value===cur)?cur:'all';
+}catch(e){$('acct-body').innerHTML='<tr><td colspan=6>'+e.message+'</td></tr>';}
+}
+async function addAuto(){$('al-msg').textContent='⏳ menunggu OTP (bisa 90 dtk)…';
+try{await api('POST','/api/accounts/auto-login',{name:$('al-name').value,email:$('al-email').value||null});
+$('al-msg').innerHTML='<span class=ok>✓ ditambahkan</span>';loadAccounts();}catch(e){$('al-msg').textContent='Error: '+e.message;}}
+async function browserStart(){try{const j=await api('POST','/api/accounts/browser-start',{name:$('br-name').value});
+const d=$('br-url');d.style.display='block';d.innerHTML=`<a href="${j.url}" target="_blank" style="color:var(--acc)">Buka URL login</a><br>${j.url}`;
+$('br-msg').textContent='Buka URL, login, lalu paste callback ke Step 2.';}catch(e){$('br-msg').textContent='Error: '+e.message;}}
+async function browserFinish(){try{await api('POST','/api/accounts/browser-finish',{name:$('br-name').value,code:$('br-code').value});
+$('br-msg').innerHTML='<span class=ok>✓ login berhasil</span>';loadAccounts();}catch(e){$('br-msg').textContent='Error: '+e.message;}}
+async function addImport(){try{await api('POST','/api/accounts/import',{name:$('im-name').value,json_str:$('im-json').value});
+$('im-msg').innerHTML='<span class=ok>✓ imported</span>';loadAccounts();}catch(e){$('im-msg').textContent='Error: '+e.message;}}
+async function addToken(){try{await api('POST','/api/accounts/token',{name:$('tk-name').value,token:$('tk-token').value});
+$('tk-msg').innerHTML='<span class=ok>✓ ditambahkan</span>';loadAccounts();}catch(e){$('tk-msg').textContent='Error: '+e.message;}}
+async function kaStartOne(){const i=+$('ka-interval').value||25;await api('POST',`/api/keepalive/${$('ka-target').value}/start`,{interval:i});loadKA();}
+async function kaStopOne(){await api('POST',`/api/keepalive/${$('ka-target').value}/stop`);loadKA();}
+async function kaStartAll(){const i=+$('ka-interval').value||25;await api('POST','/api/keepalive/all/start',{interval:i});loadKA();}
+async function kaStopAll(){await api('POST','/api/keepalive/all/stop');loadKA();}
+async function loadKA(){const j=await (await fetch('/api/keepalive/status')).json();$('ka-status').textContent=JSON.stringify(j,null,2);}
+async function loadLogs(){const a=$('log-filter').value||'all';const j=await (await fetch(`/api/logs?account=${encodeURIComponent(a)}&limit=300`)).json();
+$('logs').innerHTML=j.logs.map(e=>`<div>[${e.ts}] [${e.account}] ${e.msg.replace(/</g,'&lt;')}</div>`).join('')||'<div class=hint>belum ada log</div>';
+$('logs').scrollTop=$('logs').scrollHeight;}
+async function cx(k){const a=$('cx-acct').value;$('cx-out').textContent='loading…';
+try{const m=k==='initialize'?'POST':'GET';const r=await fetch(`/api/accounts/${a}/${k}`,{method:m});$('cx-out').textContent=JSON.stringify(await r.json(),null,2);}catch(e){$('cx-out').textContent='Error: '+e.message;}}
+async function cxAct(k){const a=$('cx-acct').value;try{await fetch(`/api/accounts/${a}/${k}`,{method:'POST'});cx('status');}catch(e){$('cx-out').textContent='Error: '+e.message;}}
+loadAccounts();setInterval(loadAccounts,10000);
+setInterval(()=>{if($('tab-logs').classList.contains('on')&&$('log-auto').checked)loadLogs();},2000);
+</script>
+</body>
+</html>
