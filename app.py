@@ -505,20 +505,8 @@ def api_ka_status():
     return {"running": ka_status()}
 
 
-@app.post("/api/keepalive/{name}/start")
-def api_ka_start(name: str, req: IntervalReq):
-    try:
-        started = ka_start(name, req.interval or 25.0)
-        return {"ok": True, "started": started}
-    except Exception as e:
-        raise HTTPException(400, str(e))
-
-
-@app.post("/api/keepalive/{name}/stop")
-def api_ka_stop(name: str):
-    return {"ok": True, "stopped": ka_stop(name)}
-
-
+# NOTE: static /all/* routes must be registered BEFORE /{name}/*,
+# otherwise "all" is captured as an account name (-> "Account 'all' not found").
 @app.post("/api/keepalive/all/start")
 def api_ka_all_start(req: IntervalReq):
     accounts = moclaw._load_accounts()
@@ -536,6 +524,24 @@ def api_ka_all_stop():
     names = list(ka_status().keys())
     res = {n: ka_stop(n) for n in names}
     return {"ok": True, "result": res}
+
+
+@app.post("/api/keepalive/{name}/start")
+def api_ka_start(name: str, req: IntervalReq):
+    if name == "all":
+        raise HTTPException(400, "use /api/keepalive/all/start for all accounts")
+    try:
+        started = ka_start(name, req.interval or 25.0)
+        return {"ok": True, "started": started}
+    except Exception as e:
+        raise HTTPException(400, str(e))
+
+
+@app.post("/api/keepalive/{name}/stop")
+def api_ka_stop(name: str):
+    if name == "all":
+        raise HTTPException(400, "use /api/keepalive/all/stop for all accounts")
+    return {"ok": True, "stopped": ka_stop(name)}
 
 
 # ---------- logs tab ----------
