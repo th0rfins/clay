@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""moclaw.ai — multi-account manager (TUI)."""
+"""zentor.ai — multi-account manager (TUI)."""
 
 import json, hashlib, base64, secrets, time, sys, re, os
 import urllib.parse
@@ -9,13 +9,17 @@ from urllib.error import HTTPError
 from http.cookiejar import CookieJar
 
 # --- config ---
-AUTH_DOMAIN = "https://auth.moclaw.ai"
-API_BASE = "https://api.moclaw.ai"
+# moclaw.ai rebranded to zentor.ai; auth host/audience/redirect changed, OAuth
+# client_id is unchanged. ZENTOR_* mirrors the old MOCLAW_* names.
+SITE = os.environ.get("ZENTOR_SITE", "https://zentor.ai")
+AUTH_DOMAIN = "https://auth.zentor.ai"
+API_BASE = "https://api.zentor.ai"
+AUDIENCE = os.environ.get("ZENTOR_AUDIENCE", API_BASE)
 CLIENT_ID = "R7QyN3rYIv2DSEqkgQJjfSvvb6XFxMOu"
-REDIRECT_URI = "https://moclaw.ai/auth/callback"
+REDIRECT_URI = f"{SITE}/auth/callback"
 TMAIL_BASE = "https://tmail.perkutut.web.id"
 
-MOCLAW_DIR = Path(os.environ.get("MOCLAW_DIR", str(Path.home() / ".moclaw")))
+MOCLAW_DIR = Path(os.environ.get("MOCLAW_DIR", str(Path.home() / ".zentor")))
 ACCOUNTS_FILE = MOCLAW_DIR / "accounts.json"
 CURRENT_FILE = MOCLAW_DIR / "current.txt"
 
@@ -32,8 +36,8 @@ def _post_json(url, data, token=None, timeout=30):
     headers = {
         "Content-Type": "application/json",
         "User-Agent": "Mozilla/5.0",
-        "Origin": "https://moclaw.ai",
-        "Referer": "https://moclaw.ai/",
+        "Origin": SITE,
+        "Referer": SITE + "/",
     }
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -45,8 +49,8 @@ def _get(url, token):
     req = Request(url, headers={
         "Authorization": f"Bearer {token}",
         "User-Agent": "Mozilla/5.0",
-        "Origin": "https://moclaw.ai",
-        "Referer": "https://moclaw.ai/",
+        "Origin": SITE,
+        "Referer": SITE + "/",
     })
     with urlopen(req, timeout=10) as r:
         return json.loads(r.read())
@@ -323,7 +327,7 @@ def _build_authorize_url(verifier=None):
     params = urllib.parse.urlencode({
         "client_id": CLIENT_ID,
         "scope": "openid profile email offline_access",
-        "audience": API_BASE,
+        "audience": AUDIENCE,
         "redirect_uri": REDIRECT_URI,
         "response_type": "code",
         "response_mode": "query",
@@ -348,8 +352,8 @@ def login_browser_start(name, email=None):
     }))
     print(f"\n  Account: {name}")
     print(f"  Open this URL in your browser:\n\n     {url}\n")
-    print("  Login sampai mendarat di moclaw.ai/auth/callback?code=...")
-    print(f"  Lalu selesaikan via menu 'Finish login via URL' atau:\n     python3 moclaw.py login-browser {name} --code <CALLBACK_URL|CODE>")
+    print("  Login sampai mendarat di zentor.ai/auth/callback?code=...")
+    print(f"  Lalu selesaikan via menu 'Finish login via URL' atau:\n     python3 zentor.py login-browser {name} --code <CALLBACK_URL|CODE>")
     return url
 
 
@@ -410,7 +414,7 @@ def login_via_browser(name, email=None, raw=None):
     url, verifier = _build_authorize_url()
     print(f"\n  1) Open this URL in your browser:\n\n     {url}\n")
     print("  2) Complete login (solve captcha if asked).")
-    print("  3) You land on moclaw.ai/auth/callback?code=... — copy the full URL.")
+    print("  3) You land on zentor.ai/auth/callback?code=... — copy the full URL.")
     raw = input("\n  Paste callback URL or code: ").strip()
     code = _extract_code(raw)
     if not code:
@@ -447,7 +451,7 @@ def _auth0_login(email, tmail_token, timeout=90):
     params = urllib.parse.urlencode({
         "client_id": CLIENT_ID,
         "scope": "openid profile email offline_access",
-        "audience": API_BASE,
+        "audience": AUDIENCE,
         "redirect_uri": REDIRECT_URI,
         "response_type": "code",
         "response_mode": "query",
@@ -611,7 +615,13 @@ def get_token(name=None):
             raise RuntimeError(f"Token expired for '{name}', no refresh token")
     return session["access_token"]
 
-# --- API ---
+# --- API (zentor: REST sandbox calls were replaced by gRPC-Web Connect) ---
+def _grpc_post(path: str, message: dict, token: str, timeout: int = 30):
+    """Call a Connect RPC. The gateway speaks plain JSON over POST, so no
+    protobuf serialization is needed for these unary methods."""
+    return _post_json(f"{API_BASE}/{path}", message, token, timeout=timeout)
+
+
 def _with_reauth(fn, name):
     """Run fn(); on 401/403 relogin the account once and retry."""
     try:
@@ -623,21 +633,63 @@ def _with_reauth(fn, name):
         raise
 
 
-def environment_status(name=None):
-    """GET /api/v2/environment/status."""
+def _current_user(name=None):
+    """GET-er-ung proxy: POST /moclaw.user.v2.UserService/GetCurrentUser."""
     if name is None:
         name = _get_current()
     def _run():
-        return _get(f"{API_BASE}/api/v2/environment/status", get_token(name))
+        return _grpc_post("moclaw.user.v2.UserService/GetCurrentUser", {}, get_token(name))
     return _with_reauth(_run, name)
 
+
+def default_agent_id(name=None):
+    """The agent_id needed by connect_desktop. Cached on the session."""
+    if name is None:
+        name = _get_current()
+    session = _get_account(name)
+    agent_id = session.get("agent_id")
+    if agent_id:
+        return agent_id
+    user = _current_user(name)
+    agent = user.get("default_agent") or {}
+    agent_id = agent.get("id")
+    if not agent_id:
+        raise RuntimeError(f"no default_agent for '{name}': {user}")
+    session["agent_id"] = agent_id
+    _save_account(name, session)
+    return agent_id
+
+
+def environment_status(name=None):
+    """Sandbox state. The old REST /environment/status still exists, but the
+    webapp now derives everything from GetCurrentUser + ConnectDesktop."""
+    if name is None:
+        name = _get_current()
+    user = _current_user(name)
+    agent = user.get("default_agent") or {}
+    return {
+        "agent": agent,
+        "sandbox": {"sandbox_id": agent.get("id"), "status": "ready"},
+    }
+
+
 def sandbox_connect(sandbox_id, name=None):
-    """GET /api/sandboxes/{sandbox_id}/connect."""
+    """POST /moclaw.sandbox.v2.SandboxService/ConnectDesktop.
+
+    zentor renamed the REST route to a gRPC-Web Connect endpoint; the request
+    field is agent_id (a UUID), the response carries stream_url +
+    stream_auth_key. JSON encoding works because the gateway is not strict.
+    """
     if name is None:
         name = _get_current()
     def _run():
-        return _get(f"{API_BASE}/api/sandboxes/{sandbox_id}/connect", get_token(name))
+        return _grpc_post(
+            "moclaw.sandbox.v2.SandboxService/ConnectDesktop",
+            {"agent_id": sandbox_id},
+            get_token(name),
+        )
     return _with_reauth(_run, name)
+
 
 def environment_initialize(payload=None, name=None):
     """POST /api/v2/environment/initialize — wake/recover sandbox."""
@@ -719,19 +771,17 @@ def _section(title):
     print(f"  ── {title} {'─' * max(2, 53 - len(title))}")
 
 def format_connect(result):
-    """Pretty print connect result. mcp_token optional (API dropped it)."""
+    """Pretty print connect result. zentor drops mcp_url/mcp_token."""
     account = result["account"]
     env = result["env"]
     conn = result["connect"]
     sb = env.get("sandbox") or {}
+    agent = env.get("agent") or {}
     print(f"Account:        {account}")
-    print(f"Sandbox ID:     {sb.get('sandbox_id') or conn.get('sandbox_id')}")
-    print(f"Status:         {sb.get('status')} | runtime: {env.get('runtime_state')} | reason: {env.get('reason')}")
+    print(f"Agent ID:       {agent.get('id') or sb.get('sandbox_id') or conn.get('sandbox_id')}")
+    print(f"Agent:          {agent.get('name', '-')} (active: {agent.get('is_active')})")
     print(f"Stream URL:     {conn.get('stream_url') or sb.get('stream_url')}")
     print(f"Stream Auth:    {conn.get('stream_auth_key', '-')}")
-    print(f"MCP URL:        {conn.get('mcp_url', '-')}")
-    if conn.get("mcp_token"):
-        print(f"MCP Token:      {conn['mcp_token']}")
     print()
 
 def _account_row(i, name, sess, cur):
@@ -765,7 +815,7 @@ def menu_main():
     status = ""
     while True:
         clear()
-        show_header("MOCLAW.AI — Multi-Account Manager")
+        show_header("ZENTOR.AI — Multi-Account Manager")
         if status:
             print(f"  {status}\n")
         _section("ACCOUNTS")
@@ -1024,31 +1074,26 @@ def keepalive(name=None, interval=25.0, reinit_on_fail=True, simulate_refresh=Fa
         print(("\n" if blank else "") + line, flush=True)
 
     def resolve():
-        env = environment_status(name)
-        sb = env.get("sandbox") or {}
-        status = (sb.get("status") or env.get("runtime_state") or "").lower()
-        reason = env.get("reason")
-        if (status in ("paused", "stopped", "unavailable", "pending", "recovering")
-                or reason in ("sandbox_paused", "sandbox_missing")):
-            log(f"sandbox {status or reason} → initialize...")
-            environment_initialize(name=name)
-            env = environment_status(name)
-            sb = env.get("sandbox") or {}
-        sid = sb.get("sandbox_id")
-        if not sid:
-            raise RuntimeError(f"no sandbox_id in status: {env}")
-        conn = sandbox_connect(sid, name)
-        url = conn.get("stream_url") or sb.get("stream_url")
+        """zentor: no REST sandbox status anymore — probe ConnectDesktop directly
+        and initialize only when it returns no stream_url."""
+        agent = default_agent_id(name)
+        conn = sandbox_connect(agent, name)
+        url = conn.get("stream_url")
         if not url:
-            raise RuntimeError(f"no stream_url: {conn}")
-        return sid, url, stream_host_from_url(url)
+            log(f"no stream_url: {conn} → initialize...")
+            environment_initialize(name=name)
+            conn = sandbox_connect(agent, name)
+            url = conn.get("stream_url")
+        if not url:
+            raise RuntimeError(f"no stream_url after initialize: {conn}")
+        return agent, url, stream_host_from_url(url)
 
     def http_ping(host):
         t0 = time.time()
         req = Request(f"https://{host}/", headers={
-            "User-Agent": "moclaw-keepalive/1.0",
-            "Origin": "https://moclaw.ai",
-            "Referer": "https://moclaw.ai/",
+            "User-Agent": "zentor-keepalive/1.0",
+            "Origin": SITE,
+            "Referer": SITE + "/",
         })
         with _urlopen(req, timeout=15) as r:
             r.read(256)
@@ -1075,7 +1120,7 @@ def keepalive(name=None, interval=25.0, reinit_on_fail=True, simulate_refresh=Fa
             f"Connection: Upgrade\r\n"
             f"Sec-WebSocket-Key: {key}\r\n"
             f"Sec-WebSocket-Version: 13\r\n"
-            f"Origin: https://moclaw.ai\r\n"
+            f"Origin: {SITE}\r\n"
             f"\r\n"
         )
         sock.sendall(req.encode())

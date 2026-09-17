@@ -25,8 +25,9 @@ import moclaw
 
 BASE_DIR = Path(__file__).parent
 TPL = BASE_DIR / "templates" / "index.html"
+SITE = os.environ.get("ZENTOR_SITE", "https://zentor.ai")
 
-app = FastAPI(title="moclaw dashboard")
+app = FastAPI(title="zentor dashboard")
 
 # ---------- log buffer ----------
 LOGS: deque = deque(maxlen=3000)
@@ -48,9 +49,9 @@ KA_LOCK = threading.Lock()
 def _http_ping(host: str):
     t0 = time.time()
     req = Request(f"https://{host}/", headers={
-        "User-Agent": "moclaw-keepalive/1.0",
-        "Origin": "https://moclaw.ai",
-        "Referer": "https://moclaw.ai/",
+        "User-Agent": "zentor-keepalive/1.0",
+        "Origin": SITE,
+        "Referer": SITE + "/",
     })
     with urlopen(req, timeout=15) as r:
         r.read(256)
@@ -74,7 +75,7 @@ def _ws_open(host: str):
         f"GET /websockify HTTP/1.1\r\nHost: {host}\r\n"
         "Upgrade: websocket\r\nConnection: Upgrade\r\n"
         f"Sec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\n"
-        "Origin: https://moclaw.ai\r\n\r\n".encode()
+        f"Origin: {SITE}\r\n\r\n".encode()
     )
     buf = b""
     while b"\r\n\r\n" not in buf:
@@ -136,24 +137,22 @@ def _ws_ping(sock):
 
 
 def _resolve(name: str):
-    env = moclaw.environment_status(name)
-    sb = env.get("sandbox") or {}
-    status = (sb.get("status") or env.get("runtime_state") or "").lower()
-    reason = env.get("reason")
-    if status in ("paused", "stopped", "unavailable", "pending", "recovering") \
-            or reason in ("sandbox_paused", "sandbox_missing"):
-        log(name, f"sandbox {status or reason} -> initialize...")
-        moclaw.environment_initialize(name=name)
-        env = moclaw.environment_status(name)
-        sb = env.get("sandbox") or {}
-    sid = sb.get("sandbox_id")
-    if not sid:
-        raise RuntimeError(f"no sandbox_id: {env}")
-    conn = moclaw.sandbox_connect(sid, name)
-    url = conn.get("stream_url") or sb.get("stream_url")
+    """zentor: the REST environment/status route no longer carries sandbox state.
+
+    The sandbox is live iff ConnectDesktop answers with a stream_url, so probe
+    it with the account's agent_id (initialize first when it stays empty).
+    """
+    agent = moclaw.default_agent_id(name)
+    conn = moclaw.sandbox_connect(agent, name)
+    url = conn.get("stream_url")
     if not url:
-        raise RuntimeError(f"no stream_url: {conn}")
-    return sid, url, moclaw.stream_host_from_url(url)
+        log(name, f"no stream_url: {conn} -> initialize...")
+        moclaw.environment_initialize(name=name)
+        conn = moclaw.sandbox_connect(agent, name)
+        url = conn.get("stream_url")
+    if not url:
+        raise RuntimeError(f"no stream_url after initialize: {conn}")
+    return agent, url, moclaw.stream_host_from_url(url)
 
 
 def _worker(name: str, interval: float, stop: threading.Event):
