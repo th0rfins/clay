@@ -619,7 +619,24 @@ def get_token(name=None):
 def _grpc_post(path: str, message: dict, token: str, timeout: int = 30):
     """Call a Connect RPC. The gateway speaks plain JSON over POST, so no
     protobuf serialization is needed for these unary methods."""
-    return _post_json(f"{API_BASE}/{path}", message, token, timeout=timeout)
+    return _zentor_keys(_post_json(f"{API_BASE}/{path}", message, token, timeout=timeout))
+
+
+def _zentor_keys(value):
+    """Normalize Connect JSON camelCase to this module's snake_case keys."""
+    if isinstance(value, list):
+        return [_zentor_keys(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+    names = {
+        "defaultAgent": "default_agent",
+        "isActive": "is_active",
+        "streamUrl": "stream_url",
+        "streamAuthKey": "stream_auth_key",
+        "sandboxId": "sandbox_id",
+    }
+    return {names.get(key, key): _zentor_keys(item)
+            for key, item in value.items()}
 
 
 def _with_reauth(fn, name):
