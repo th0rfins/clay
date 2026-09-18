@@ -18,17 +18,24 @@ if (localStorage.theme === 'light') document.documentElement.classList.remove('d
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-body{font-family:'Inter',system-ui,sans-serif;background-image:radial-gradient(circle at 85% -10%,rgba(34,189,116,.12),transparent 34rem),radial-gradient(circle at 5% 20%,rgba(14,165,233,.08),transparent 28rem)}
+body{font-family:'Inter',system-ui,sans-serif;background:#070d1c;background-image:radial-gradient(circle at 78% -8%,rgba(34,197,139,.18),transparent 30rem),radial-gradient(circle at 8% 18%,rgba(59,130,246,.12),transparent 26rem)}
 .mono{font-family:'JetBrains Mono',monospace}
-.card{box-shadow:0 1px 2px rgba(15,23,42,.04),0 12px 32px rgba(15,23,42,.04);transition:border-color .2s,box-shadow .2s,transform .2s}
-.card:hover{border-color:#cbd5e1;box-shadow:0 12px 32px rgba(15,23,42,.08)}
-.dark .card{box-shadow:0 1px 2px rgba(0,0,0,.2),0 16px 40px rgba(0,0,0,.14)}
-.dark .card:hover{border-color:#334155}
-.btn{box-shadow:0 1px 2px rgba(15,23,42,.06)}
-.btn-brand{box-shadow:0 6px 16px -5px rgba(34,189,116,.7)}
-.btn-brand:hover{transform:translateY(-1px);box-shadow:0 9px 20px -5px rgba(34,189,116,.8)}
-.stat-ic{box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
-@media(max-width:640px){#stats{grid-template-columns:1fr 1fr}.card{border-radius:.8rem}}
+.card{background:rgba(15,25,45,.78);border-color:rgba(71,94,127,.42);box-shadow:0 1px 2px rgba(0,0,0,.25),0 18px 45px rgba(0,0,0,.12);backdrop-filter:blur(14px);transition:border-color .2s,box-shadow .2s,transform .2s}
+.card:hover{border-color:rgba(99,130,174,.65);box-shadow:0 18px 52px rgba(0,0,0,.2)}
+.dark .card{background:rgba(15,25,45,.78);border-color:rgba(71,94,127,.42)}
+body:not(.dark){background:#eef3f8;background-image:radial-gradient(circle at 85% -10%,rgba(34,189,116,.16),transparent 34rem)}
+body:not(.dark) .card{background:rgba(255,255,255,.84);border-color:#dbe4ef;box-shadow:0 10px 30px rgba(30,55,90,.08)}
+.btn{box-shadow:0 1px 2px rgba(0,0,0,.18);min-height:38px}
+.btn-brand{box-shadow:0 8px 22px -7px rgba(34,197,139,.85)}
+.btn-brand:hover{transform:translateY(-1px);box-shadow:0 12px 25px -6px rgba(34,197,139,.9)}
+.stat-ic{box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.hero{position:relative;overflow:hidden;background:linear-gradient(120deg,#10243b 0%,#102b3a 48%,#123e3c 100%);border:1px solid rgba(70,207,159,.3);box-shadow:0 18px 50px rgba(0,0,0,.2)}
+.hero:after{content:'';position:absolute;width:280px;height:280px;right:-70px;top:-120px;border-radius:50%;background:rgba(58,224,163,.16);filter:blur(2px)}
+.hero-grid{position:absolute;inset:0;opacity:.15;background-image:linear-gradient(rgba(255,255,255,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.18) 1px,transparent 1px);background-size:28px 28px;mask-image:linear-gradient(90deg,#000,transparent 75%)}
+.empty-illustration{background:linear-gradient(135deg,rgba(34,197,139,.18),rgba(59,130,246,.16));border:1px solid rgba(111,231,190,.25);box-shadow:0 0 0 8px rgba(34,197,139,.04),0 20px 45px rgba(0,0,0,.18)}
+.navbtn.on{background:linear-gradient(90deg,#22c58b,#159b71);box-shadow:0 8px 22px -8px rgba(34,197,139,.85)}
+@media(max-width:640px){#stats{grid-template-columns:1fr 1fr}.card{border-radius:.8rem}.hero{border-radius:1rem}}
+@media(min-width:768px){#pg-overview{padding-top:.25rem}}
 ::-webkit-scrollbar{width:8px;height:8px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:#334155;border-radius:8px}
@@ -128,6 +135,15 @@ td{padding:.7rem .9rem;font-size:.85rem;border-top:1px solid #f1f5f9}
     <main class="p-4 md:p-8 max-w-6xl w-full mx-auto space-y-5">
       <!-- ===== OVERVIEW ===== -->
       <section id="pg-overview" class="space-y-5">
+        <div class="hero rounded-2xl p-5 md:p-7 text-white">
+          <div class="hero-grid"></div>
+          <div class="relative z-10 max-w-2xl">
+            <div class="flex items-center gap-2 text-emerald-300 text-xs font-bold uppercase tracking-[.16em]"><span class="dot on"></span> Zentor control center</div>
+            <h2 class="text-2xl md:text-3xl font-extrabold tracking-tight mt-3">Keep every workspace ready.</h2>
+            <p class="text-slate-300 text-sm md:text-base mt-2 max-w-xl">Monitor accounts, refresh tokens, and keep sandboxes available from one quiet dashboard.</p>
+            <div class="flex flex-wrap gap-2 mt-5"><button class="btn btn-brand" onclick="goto('add')">+ Add first account</button><button class="btn bg-white/10 text-white border border-white/15 hover:bg-white/15" onclick="refreshAll()">↻ Sync now</button></div>
+          </div>
+        </div>
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="stats"></div>
         <div class="card overflow-hidden">
           <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
@@ -317,7 +333,7 @@ async function loadAccounts(){
       statCard('Keepalive running', nRun, '', 'bg-brand-100 dark:bg-brand-500/10 text-brand-500','⚡') +
       statCard('Expired', nExp, '', nExp?'bg-red-100 dark:bg-red-500/10 text-red-500':'bg-slate-100 dark:bg-slate-800 text-slate-400','⚠') +
       statCard('With refresh token', j.accounts.filter(a=>a.has_refresh).length, '', 'bg-violet-100 dark:bg-violet-500/10 text-violet-500','🔑');
-    const tb = $('acct-body'); tb.innerHTML = j.accounts.length?'':'<tr><td colspan="6" class="text-center text-slate-400 py-8">Belum ada akun — tambah via halaman Add.</td></tr>';
+    const tb = $('acct-body'); tb.innerHTML = j.accounts.length?'':'<tr><td colspan="6"><div class="flex flex-col items-center justify-center text-center py-14 px-6"><div class="empty-illustration w-16 h-16 rounded-2xl flex items-center justify-center text-2xl text-emerald-300">✦</div><h3 class="text-lg font-bold text-slate-900 dark:text-white mt-5">No accounts yet</h3><p class="text-sm text-slate-400 max-w-sm mt-1">Add your first account to start monitoring tokens and keeping your workspace warm.</p><button class="btn btn-brand mt-5" onclick="goto('add')">+ Add account</button></div></td></tr>';
     for(const a of j.accounts){
       const tr = document.createElement('tr');
       tr.innerHTML = `<td class="font-semibold text-slate-900 dark:text-white">${a.current?'<span class="text-brand-500">► </span>':''}${a.name}<div class="text-[11px] font-normal text-slate-400">${a.email||'no email'}</div></td>
